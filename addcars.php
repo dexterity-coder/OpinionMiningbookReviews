@@ -1,11 +1,43 @@
 <?php
 session_start();
 include 'includes/connection.php';
+include 'includes/functions.php';
 $userid = $_SESSION["userid"];
 $role = $_SESSION["role"];
 $email = $_SESSION["email"];
 if (!$_SESSION) {
     header("location:login/login");
+}
+
+if (isset($_GET['del'])) {
+    $book_id = $_GET['del'];
+    $delete_book = mysqli_query($conn, "delete from books where bookid = '" . $book_id . "'");
+    if ($delete_book) {
+        echo "<script>alert('Car deleted succesfully!'); window.location.href='addcars';</script>";
+    } else {
+        echo "<script>alert('Delete Operations Unsuccesfully!'); window.location.href='addcars';</script>";
+    }
+}
+
+if (isset($_POST["submit"])) {
+    $bookName = htmlentities(addslashes($_POST["bkname"]));
+    $bookAuthors = htmlentities(addslashes($_POST["bkauthor"]));
+    $bookDesc = htmlentities(addslashes($_POST["bkdesc"]));
+    $bookImg = $_FILES["bkimg"]["name"];
+    $bookid = "BK-" . date("iydh");
+
+    $img_ext = pathinfo($bookImg, PATHINFO_EXTENSION);
+    $image_url = upload_book_image($_FILES["bkimg"]["tmp_name"], $img_ext);
+    if ($image_url != "") {
+        $insert = mysqli_query($conn, "insert into books values('$bookid','$bookName','$bookAuthors','$bookDesc','$image_url')") or die(mysqli_error($conn));
+        if ($insert) {
+            echo "<script>alert('Car registration succesfull!'); window.location.href='addcars.php';</script>";
+        } else {
+            echo "<script>alert('Car registration unsuccesfull! pls try after some minutes');</script>";
+        }
+    } else {
+        echo "<script>alert('Car image upload failed! pls try after some minutes');</script>";
+    }
 }
 ?>
 <!DOCTYPE HTML>
@@ -131,49 +163,92 @@ if (!$_SESSION) {
                     include 'includes/dashboard.php';
                     ?>
 
-                   
-                            <div class="charts">		
-                                <div class="mid-content-top charts-grids">
-                                    <div class="middle-content">
-                                        <h4 class="title">Trending Cars</h4>
+                    <div class="row widgettable">
+                        <div style="width:100%; height: 100%; margin-left:0px;  margin-top: 30px !important;" class="col-md-12 general-grids grids-right widget-shadow">
+                            <h4 class="title2">ADD | MANAGE CARS</h4>
+                            <ul id="myTabs" class="nav nav-tabs" role="tablist"> 
+                                <li role="presentation" class="active"><a href="#profile" role="tab" id="profile-tab" data-toggle="tab" aria-controls="profile" aria-expanded="true">Manage Cars</a></li>
+                                <li role="presentation" class=""><a href="#home" id="home-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="false">Add Cars</a></li> 
+                            </ul>
+                            <div style="width:100%; height: 100%;" id="myTabContent" class="tab-content scrollbar1"> 
+                                <div role="tabpanel" class="tab-pane fade" id="home" aria-labelledby="home-tab"> 
+                                    <div class="form-grids row widget-shadow" data-example-id="basic-forms"> 
+                                        <div class="form-body">
+                                            <form action="" method="post" enctype="multipart/form-data"> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputEmail1">Car Name</label> 
+                                                    <input type="text" name="bkname" class="form-control" id="exampleInputEmail1" placeholder="Car Name e.g Mercedes-Benz E-Class "> 
+                                                </div> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputPassword1">Manufacturers</label> 
+                                                    <input type="text" name="bkauthor" class="form-control" id="exampleInputPassword1" placeholder="Car Brand (Manufacturers) e.g Mercedes"> 
+                                                </div> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputPassword1">Car Specification</label> 
+                                                    <textarea name="bkdesc" class="form-control" rows="4" placeholder="Enter Car Description/Specification Here"></textarea>
+                                                </div> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputFile">Car Sample Image</label> 
+                                                    <input type="file" name="bkimg" id="exampleInputFile"> 
+                                                </div> 
 
-                                        <!-- start content_slider -->
-                                        <div id="owl-demo" class="owl-carousel text-center">
-                                            <?php
-                                            $books = mysqli_query($conn, "select * from books");
-                                            while ($row = mysqli_fetch_array($books)) {
-                                                $bname = $row["bookname"];
-                                                $bid = $row["bookid"];
-                                                $bauthor = $row["bookauthor"];
-                                                $bimg = $row["img"];
-                                                $bdesc = $row["bookdesc"];
-                                                ?>
-                                                <div class="item">
-                                                    <a title="Click to view <?php echo $bname; ?> Reviews and Analysis" href="caranalysis?u=<?php echo base64_encode($bid); ?>">   <img class="lazyOwl img-responsive" data-src="images/<?php echo $bimg; ?>" alt="name"></a>
-                                                </div>                                        
-                                                <?php
-                                            }
-                                            ?>
-
+                                                <button type="submit" name="submit" class="btn btn-default">Add Car</button> 
+                                            </form> 
                                         </div>
                                     </div>
-                                    <!--//sreen-gallery-cursual---->
-                                </div>
+                                </div> 
+                                <div role="tabpanel" class="tab-pane fade active in" id="profile" aria-labelledby="profile-tab"> 
+                                    <div class="bs-example widget-shadow" data-example-id="contextual-table"> 
+                                        <table class="table"> 
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Car Preview</th>
+                                                    <th>Car Name</th>
+                                                    <th>Car Brand</th>
+                                                    <th>Actions</th>
+                                                </tr> 
+                                            </thead> 
+                                            <tbody> 
+                                                <?php
+                                                $result = mysqli_query($conn, "select * from books");
+                                                $a = 1;
+                                                while ($row = mysqli_fetch_array($result)) {
+                                                    $bkid = $row["bookid"];
+                                                    $bkname = $row["bookname"];
+                                                    $bkauthor = $row["bookauthor"];
+                                                    $bkdesc = $row["bookdesc"];
+                                                    $bkimg = $row["img"];
+                                                    ?>
+                                                    <tr class="">
+                                                        <th scope="row"><?php echo $a; ?></th>
+                                                        <td><a title="click to see full car cover" href="images/<?php echo $bkimg; ?>"><img src="images/<?php echo $bkimg; ?>" width="80" height="100" ></a></td> 
+                                                        <td><?php echo $bkname; ?></td>
+                                                        <td><?php echo $bkauthor; ?></td>
+                                                        <td><a href="updatecars?u=<?php echo base64_encode($bkid); ?>">DETAILS</a> | <a href="addcars?del=<?php echo $bkid; ?>">DELETE</a></td>
+                                                    </tr> 
+                                                    <?php
+                                                    $a++;
+                                                }
+                                                ?>
+                                            </tbody> 
+                                        </table> 
+                                    </div>  
+                                </div> 
+
                             </div>
+                        </div>
+                    </div>
 
+                    <!-- for amcharts js -->
+                    <script src="js/amcharts.js"></script>
+                    <script src="js/serial.js"></script>
+                    <script src="js/export.min.js"></script>
+                    <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
+                    <script src="js/light.js"></script>
+                    <!-- for amcharts js -->
 
-                            <!-- for amcharts js -->
-                            <script src="js/amcharts.js"></script>
-                            <script src="js/serial.js"></script>
-                            <script src="js/export.min.js"></script>
-                            <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
-                            <script src="js/light.js"></script>
-                            <!-- for amcharts js -->
-
-                            <script  src="js/index1.js"></script>
-
-                        
-
+                    <script  src="js/index1.js"></script>
 
                 </div>
             </div>

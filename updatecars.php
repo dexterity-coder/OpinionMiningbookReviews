@@ -1,17 +1,39 @@
 <?php
 session_start();
 include 'includes/connection.php';
+include 'includes/functions.php';
 $userid = $_SESSION["userid"];
 $role = $_SESSION["role"];
 $email = $_SESSION["email"];
 if (!$_SESSION) {
     header("location:login/login");
 }
+$book_id = isset($_GET["u"]) ? base64_decode($_GET["u"]) : "";
+$book_details = mysqli_query($conn, "select * from books where bookid='$book_id'");
+$row = mysqli_fetch_array($book_details);
+$bkid = $row["bookid"];
+$bkname = $row["bookname"];
+$bkauthor = $row["bookauthor"];
+$bkdesc = $row["bookdesc"];
+$bkimg = $row["img"];
+
+if (isset($_POST["submit"])) {
+    $bookName = $_POST["bkname"];
+    $bookAuthors = $_POST["bkauthor"];
+    $bookDesc = htmlentities(addslashes($_POST["bkdesc"]));
+
+    $update = mysqli_query($conn, "update books set bookname='$bookName', bookauthor='$bookAuthors', bookdesc='$bookDesc' where bookid='$book_id'") or die(mysqli_error($conn));
+    if ($update) {
+        echo "<script>alert('Car updated succesfull!'); window.location.href='addcars.php';</script>";
+    } else {
+        echo "<script>alert('Car update unsuccesfull! pls try after some minutes');</script>";
+    }
+}
 ?>
 <!DOCTYPE HTML>
 <html>
     <head>
-        <title><?php echo $sitename; ?> | Home </title>
+        <title><?php echo $sitename; ?> | Update </title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta name="keywords" content="Glance Design Dashboard Responsive web template, Bootstrap Web Templates, Flat Web Templates, Android Compatible web template, 
@@ -131,49 +153,56 @@ if (!$_SESSION) {
                     include 'includes/dashboard.php';
                     ?>
 
-                   
-                            <div class="charts">		
-                                <div class="mid-content-top charts-grids">
-                                    <div class="middle-content">
-                                        <h4 class="title">Trending Cars</h4>
+                    <div class="row widgettable">
+                        <div style="width:100%; height: 100%; margin-left:0px;  margin-top: 30px !important;" class="col-md-12 general-grids grids-right widget-shadow">
+                            <h4 class="title2">UPDATE CAR</h4>
 
-                                        <!-- start content_slider -->
-                                        <div id="owl-demo" class="owl-carousel text-center">
-                                            <?php
-                                            $books = mysqli_query($conn, "select * from books");
-                                            while ($row = mysqli_fetch_array($books)) {
-                                                $bname = $row["bookname"];
-                                                $bid = $row["bookid"];
-                                                $bauthor = $row["bookauthor"];
-                                                $bimg = $row["img"];
-                                                $bdesc = $row["bookdesc"];
-                                                ?>
-                                                <div class="item">
-                                                    <a title="Click to view <?php echo $bname; ?> Reviews and Analysis" href="caranalysis?u=<?php echo base64_encode($bid); ?>">   <img class="lazyOwl img-responsive" data-src="images/<?php echo $bimg; ?>" alt="name"></a>
-                                                </div>                                        
-                                                <?php
-                                            }
-                                            ?>
+                            <div style="width:100%; height: 100%;" id="myTabContent" class=" tab-content scrollbar1"> 
 
+                                <div role="tabpanel" class="tab-pane col-md-8 fade active in" id="profile" aria-labelledby="profile-tab"> 
+                                    <div class="bs-example widget-shadow" data-example-id="contextual-table"> 
+                                        <div class="form-body">
+                                            <form action="" method="post" enctype="multipart/form-data"> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputEmail1">Car Name</label> 
+                                                    <input type="text" value="<?php echo $bkname ?>" name="bkname" class="form-control" id="exampleInputEmail1" placeholder="Car Name e.g Mercedes-Benz E-Class "> 
+                                                </div> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputPassword1">Car Manufacturer</label> 
+                                                    <input type="text" value="<?php echo $bkauthor ?>" name="bkauthor" class="form-control" id="exampleInputPassword1" placeholder="Car Brand (Manufacturers) e.g Mercedes"> 
+                                                </div> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputPassword1">Car Specification</label> 
+                                                    <textarea name="bkdesc" class="form-control" rows="4" placeholder="Enter Car Description Here"><?php echo $bkdesc ?></textarea>
+                                                </div>                                              
+                                                <button type="submit" name="submit" class="btn btn-default">Update Cars</button> 
+                                            </form> 
                                         </div>
-                                    </div>
-                                    <!--//sreen-gallery-cursual---->
+                                    </div>  
+                                </div> 
+
+                                <div role="tabpanel" class="tab-pane col-md-4 fade active in" id="profile" aria-labelledby="profile-tab"> 
+                                    <div class="bs-example widget-shadow" data-example-id="contextual-table"> 
+                                        <div class="form-body">
+                                            <img src="images/<?php echo $bkimg; ?> " width="100%" height="100%"> 
+                                        </div>
+                                    </div>  
                                 </div>
+
+
                             </div>
+                        </div>
+                    </div>
 
+                    <!-- for amcharts js -->
+                    <script src="js/amcharts.js"></script>
+                    <script src="js/serial.js"></script>
+                    <script src="js/export.min.js"></script>
+                    <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
+                    <script src="js/light.js"></script>
+                    <!-- for amcharts js -->
 
-                            <!-- for amcharts js -->
-                            <script src="js/amcharts.js"></script>
-                            <script src="js/serial.js"></script>
-                            <script src="js/export.min.js"></script>
-                            <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
-                            <script src="js/light.js"></script>
-                            <!-- for amcharts js -->
-
-                            <script  src="js/index1.js"></script>
-
-                        
-
+                    <script  src="js/index1.js"></script>
 
                 </div>
             </div>

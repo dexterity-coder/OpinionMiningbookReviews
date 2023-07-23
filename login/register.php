@@ -66,7 +66,7 @@ if (isset($_POST["submit"])) {
                     <div class="d-grid forms23-grids">
                         <div class="form23">
                             <div class="main-bg">
-                                <h6 class="sec-one">Registration</h6>
+                                <h6 class="sec-one">Signup</h6>
                                 <div class="speci-login first-look">
                                     <img src="images/user.png" alt="" class="img-responsive">
                                 </div>

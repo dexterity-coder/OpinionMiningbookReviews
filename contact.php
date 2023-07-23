@@ -1,17 +1,34 @@
 <?php
 session_start();
 include 'includes/connection.php';
+include 'includes/functions.php';
 $userid = $_SESSION["userid"];
 $role = $_SESSION["role"];
 $email = $_SESSION["email"];
 if (!$_SESSION) {
     header("location:login/login");
 }
+
+if (isset($_POST["submit"])) {
+    $title = $_POST["title"];
+    $message = $_POST["msg"];
+    $date= date('Y-m-d');
+
+    $get_user_details = mysqli_fetch_array(mysqli_query($conn, "select * from user where email='$email'"));
+    $fullname = $get_user_details["fname"] . " " . $get_user_details["sname"] . " " . $get_user_details["oname"];
+
+    $update_pass = mysqli_query($conn, "insert into contact values('','$fullname','$email','$title','$message','$date','NO')") or die(mysqli_error($conn));
+    if ($update_pass) {
+        echo "<script>alert('feedback sent successfully')</script>";
+    } else {
+        echo "<script>alert('Oops! looks like we are having a downtime, please try again')</script>";
+    }
+}
 ?>
 <!DOCTYPE HTML>
 <html>
     <head>
-        <title><?php echo $sitename; ?> | Home </title>
+        <title><?php echo $sitename; ?> | Feedback </title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta name="keywords" content="Glance Design Dashboard Responsive web template, Bootstrap Web Templates, Flat Web Templates, Android Compatible web template, 
@@ -127,53 +144,44 @@ if (!$_SESSION) {
             <!-- main content start-->
             <div id="page-wrapper">
                 <div class="main-page">
-                    <?php
-                    include 'includes/dashboard.php';
-                    ?>
 
-                   
-                            <div class="charts">		
-                                <div class="mid-content-top charts-grids">
-                                    <div class="middle-content">
-                                        <h4 class="title">Trending Cars</h4>
 
-                                        <!-- start content_slider -->
-                                        <div id="owl-demo" class="owl-carousel text-center">
-                                            <?php
-                                            $books = mysqli_query($conn, "select * from books");
-                                            while ($row = mysqli_fetch_array($books)) {
-                                                $bname = $row["bookname"];
-                                                $bid = $row["bookid"];
-                                                $bauthor = $row["bookauthor"];
-                                                $bimg = $row["img"];
-                                                $bdesc = $row["bookdesc"];
-                                                ?>
-                                                <div class="item">
-                                                    <a title="Click to view <?php echo $bname; ?> Reviews and Analysis" href="caranalysis?u=<?php echo base64_encode($bid); ?>">   <img class="lazyOwl img-responsive" data-src="images/<?php echo $bimg; ?>" alt="name"></a>
-                                                </div>                                        
-                                                <?php
-                                            }
-                                            ?>
+                    <div class="row widgettable">
+                        <div style="width:100%; height: 100%; margin-left:0px;  margin-top: 30px !important;" class="col-md-12 general-grids grids-right widget-shadow">
+                            <h4 class="title2">SEED FEEDBACK</h4>
+                            <div style="width:100%; height: 100%;" id="myTabContent" class=" tab-content scrollbar1"> 
 
+                                <form method="POST" action="" role="form">
+                                    <div class="box-body">
+                                        <div class="form-group">
+                                            <label for="exampleInputPassword1">Title</label>
+                                            <input required="" name="title" type="text" class="form-control"  placeholder="Title">
                                         </div>
+                                        <div class="form-group">
+                                            <label for="exampleInputPassword1">Message</label>
+                                            <textarea required="" name="msg" type="text" class="form-control"  placeholder="Message"></textarea>
+                                        </div>
+
+
+                                    </div><!-- /.box-body -->
+
+                                    <div class="box-footer">
+                                        <input type="submit" name="submit" value="Send Feedback"  class="btn btn-primary" >
                                     </div>
-                                    <!--//sreen-gallery-cursual---->
-                                </div>
+                                </form> 
                             </div>
+                        </div>
+                    </div>
 
+                    <!-- for amcharts js -->
+                    <script src="js/amcharts.js"></script>
+                    <script src="js/serial.js"></script>
+                    <script src="js/export.min.js"></script>
+                    <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
+                    <script src="js/light.js"></script>
+                    <!-- for amcharts js -->
 
-                            <!-- for amcharts js -->
-                            <script src="js/amcharts.js"></script>
-                            <script src="js/serial.js"></script>
-                            <script src="js/export.min.js"></script>
-                            <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
-                            <script src="js/light.js"></script>
-                            <!-- for amcharts js -->
-
-                            <script  src="js/index1.js"></script>
-
-                        
-
+                    <script  src="js/index1.js"></script>
 
                 </div>
             </div>

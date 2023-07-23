@@ -1,17 +1,121 @@
 <?php
 session_start();
 include 'includes/connection.php';
+include 'phpInsight-master/autoload.php';
 $userid = $_SESSION["userid"];
 $role = $_SESSION["role"];
 $email = $_SESSION["email"];
 if (!$_SESSION) {
     header("location:login/login");
 }
+
+$bkid = isset($_GET["u"]) ? base64_decode($_GET["u"]) : "";
+
+$get_book_details = mysqli_query($conn, "select * from books where bookid='$bkid'");
+$row = mysqli_fetch_array($get_book_details);
+$bname = $row["bookname"];
+$bid = $row["bookid"];
+$bauthors = $row["bookauthor"];
+$bimg = $row["img"];
+$bdesc = $row["bookdesc"];
+
+if (isset($_POST["submit"])) {
+    $comment = htmlentities(addslashes($_POST["message"]));
+
+    if (trim($comment) != "") {
+        $sentiment = new \PHPInsight\Sentiment();
+        $category = $sentiment->categorise($comment);
+
+        if ($category == "pos") {
+            $cat = "positive";
+        } elseif ($category == "neu") {
+            $cat = "neutral";
+        } elseif ($category == "neg") {
+            $cat = "negative";
+        }
+        $date = date("Y-m-d H:i:s");
+        $query_string = base64_encode($bkid);
+        $check_user_comment = mysqli_num_rows(mysqli_query($conn, "select * from comment where user_id='$userid' and bookid='$bid'"));
+        if ($check_user_comment > 0) {
+            echo "<script>alert('You can only comment once on a car'); window.location.href='caranalysis?u=$query_string'</script>";
+        } else {
+            $insert_comment = mysqli_query($conn, "insert into comment values ('','$userid','$bid','$comment','$cat','$date')");
+            if ($insert_comment) {
+
+                echo "<script>alert('Review Added Successfully'); window.location.href='caranalysis?u=$query_string'</script>";
+            } else {
+                echo "<script>alert('Whoops! lloks like something went wrong please try again')</script>";
+            }
+        }
+    } else {
+        echo "<script>alert('comment field can not be empty')</script>";
+    }
+}
+
+//Determine sentiment here
+$pos_sent_com = mysqli_num_rows(mysqli_query($conn, "select * from comment where bookid='$bid' and status='positive'"));
+$neg_sent_com = mysqli_num_rows(mysqli_query($conn, "select * from comment where bookid='$bid' and status='negative'"));
+$neu_sent_com = mysqli_num_rows(mysqli_query($conn, "select * from comment where bookid='$bid' and status='neutral'"));
+
+
+//percentage evaluation
+$total_comments = $pos_sent_com + $neg_sent_com + $neu_sent_com;
+if ($total_comments != 0) {
+    $pos_percent = round(($pos_sent_com / $total_comments) * 100, 2);
+    $neg_percent = round(($neg_sent_com / $total_comments) * 100, 2);
+    $neu_percent = round(($neu_sent_com / $total_comments) * 100, 2);
+} else {
+    $pos_percent = 0;
+    $neg_percent = 0;
+    $neu_percent = 0;
+}
+if ($pos_sent_com > $neg_sent_com) {
+    $sentiment_outcome = "positive";
+    $thumbs = "fa-thumbs-up";
+} elseif ($neg_sent_com > $pos_sent_com) {
+    $sentiment_outcome = "negative";
+    $thumbs = "fa-thumbs-down";
+} else {
+    $sentiment_outcome = "neutral";
+    $thumbs = "fa-neuter";
+}
 ?>
 <!DOCTYPE HTML>
 <html>
     <head>
-        <title><?php echo $sitename; ?> | Home </title>
+        <title><?php echo $sitename; ?> | Car Analysis </title>
+        <style type="text/css">
+            .comment_imgs{
+                width:10%;
+                float:left;
+                height: 100%;
+                border: 1px solid grey;
+            }
+
+            .myrows{
+                width:80%; 
+                border: 1px solid grey;
+                float: right;
+            }
+
+            .sub_comments{
+                width: 100%;
+                border: 1px solid grey;
+            }
+
+            .main_comments{
+                width:100%;
+                border: 1px solid grey;
+            }
+
+            .mycomments{
+                border:1px solid grey;
+                border-bottom-left-radius:30px;
+                border-top-right-radius:30px;
+                width: 100%;
+                height: 100%;
+            }
+        </style>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta name="keywords" content="Glance Design Dashboard Responsive web template, Bootstrap Web Templates, Flat Web Templates, Android Compatible web template, 
@@ -55,6 +159,8 @@ if (!$_SESSION) {
                 height: 295px;
             }
         </style>
+
+
         <!--pie-chart --><!-- index page sales reviews visitors pie chart -->
         <script src="js/pie-chart.js" type="text/javascript"></script>
         <script type="text/javascript">
@@ -63,7 +169,7 @@ if (!$_SESSION) {
                 $('#demo-pie-1').pieChart({
                     barColor: '#2dde98',
                     trackColor: '#eee',
-                    lineCap: 'round',
+                    lineCap: 'butt',
                     lineWidth: 8,
                     onStep: function (from, to, percent) {
                         $(this.element).find('.pie-value').text(Math.round(percent) + '%');
@@ -81,9 +187,9 @@ if (!$_SESSION) {
                 });
 
                 $('#demo-pie-3').pieChart({
-                    barColor: '#ffc168',
+                    barColor: '#ff0000',
                     trackColor: '#eee',
-                    lineCap: 'square',
+                    lineCap: 'butt',
                     lineWidth: 8,
                     onStep: function (from, to, percent) {
                         $(this.element).find('.pie-value').text(Math.round(percent) + '%');
@@ -127,69 +233,202 @@ if (!$_SESSION) {
             <!-- main content start-->
             <div id="page-wrapper">
                 <div class="main-page">
-                    <?php
-                    include 'includes/dashboard.php';
-                    ?>
 
-                   
-                            <div class="charts">		
-                                <div class="mid-content-top charts-grids">
-                                    <div class="middle-content">
-                                        <h4 class="title">Trending Cars</h4>
 
-                                        <!-- start content_slider -->
-                                        <div id="owl-demo" class="owl-carousel text-center">
-                                            <?php
-                                            $books = mysqli_query($conn, "select * from books");
-                                            while ($row = mysqli_fetch_array($books)) {
-                                                $bname = $row["bookname"];
-                                                $bid = $row["bookid"];
-                                                $bauthor = $row["bookauthor"];
-                                                $bimg = $row["img"];
-                                                $bdesc = $row["bookdesc"];
-                                                ?>
-                                                <div class="item">
-                                                    <a title="Click to view <?php echo $bname; ?> Reviews and Analysis" href="caranalysis?u=<?php echo base64_encode($bid); ?>">   <img class="lazyOwl img-responsive" data-src="images/<?php echo $bimg; ?>" alt="name"></a>
-                                                </div>                                        
-                                                <?php
-                                            }
-                                            ?>
+                    <div class="row widgettable">
+                        <div style="width:100%; height: 100%; margin-left:0px;  margin-top: 30px !important;" class="col-md-12 general-grids grids-right widget-shadow">
+                            <u><h1 style="color: #3b5998; text-align: center;" class="title2"><?php echo $bname; ?></h1></u>
 
+                            <div style="width:100%; height: 100%;" id="myTabContent" class=" tab-content scrollbar1"> 
+
+                                <div role="tabpanel" class="tab-pane col-md-6 fade active in" id="profile" aria-labelledby="profile-tab"> 
+                                    <div class="bs-example widget-shadow" data-example-id="contextual-table"> 
+                                        <div class="form-body">
+                                            <img src="images/<?php echo $bimg; ?> " width="100%" height="100%"> 
                                         </div>
+                                    </div>  
+                                </div>
+
+                                <div role="tabpanel" class="tab-pane col-md-6 fade active in" id="profile" aria-labelledby="profile-tab"> 
+                                    <div class="bs-example widget-shadow" data-example-id="contextual-table"> 
+                                        <div class="form-body">
+                                            <form action="" method="post" enctype="multipart/form-data"> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputEmail1">Car Name:</label>
+                                                    <?php echo $bname; ?>
+                                                </div> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputPassword1">Car Brand:</label>
+                                                    <?php echo $bauthors; ?>
+                                                </div> 
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputPassword1">Car Description/Specification</label> 
+                                                    <p style="text-align: justify;"><?php echo html_entity_decode($bdesc); ?></p>
+
+                                                </div>
+                                                <div class="form-group"> 
+                                                    <label for="exampleInputPassword1">Analytic Review Output:</label>
+                                                    <?php
+                                                    $get_comments = mysqli_query($conn, "select * from comment where bookid='$bid' order by date desc");
+                                                    $num_comments = mysqli_num_rows($get_comments)
+                                                    ?>
+
+                                                    <?php
+                                                    if ($pos_sent_com > $neg_sent_com) {
+                                                        echo "This car is " . $pos_percent . "% recommended";
+                                                        $thumbs = "fa-thumbs-up";
+                                                    } elseif ($neg_sent_com > $pos_sent_com) {
+                                                        echo "This car is " . $neg_percent . "% poor";
+                                                        $thumbs = "fa-thumbs-down";
+                                                    } else {
+                                                        echo "This car is " . $neu_percent . "% moderate";
+                                                        $thumbs = "fa-neuter";
+                                                    }
+                                                    ?>
+                                                </div> 
+                                            </form> 
+                                        </div>
+                                    </div>  
+                                </div>                             
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts">		
+                        <div class="mid-content-top charts-grids">
+                            <div class="middle-content">
+                                <h4 class="title"><b><i><?php echo $bname; ?></i></b> Review Metrics Indicators</h4>
+
+                                <!-- start content_slider -->
+                                <div id="owl-demo" class="owl-carousel text-center">
+
+                                    <div class="content-top-1">
+                                        <div class="col-md-6 top-content">
+                                            <h5>Positive Reviews</h5>
+                                            <label><?php echo $pos_sent_com; ?></label>
+                                        </div>
+                                        <div class="col-md-6 top-content1">	   
+                                            <div id="demo-pie-1" class="pie-title-center" data-percent="<?php echo $pos_percent; ?>"> <span class="pie-value"></span> </div>
+                                        </div>
+                                        <div class="clearfix"> </div>
+                                    </div>    
+
+                                    <div class="content-top-1">
+                                        <div class="col-md-6 top-content">
+                                            <h5>Neutral Reviews</h5>
+                                            <label><?php echo $neu_sent_com; ?></label>
+                                        </div>
+                                        <div class="col-md-6 top-content1">	   
+                                            <div id="demo-pie-2" class="pie-title-center" data-percent="<?php echo $neu_percent; ?>"> <span class="pie-value"></span> </div>
+                                        </div>
+                                        <div class="clearfix"> </div>
                                     </div>
-                                    <!--//sreen-gallery-cursual---->
+                                    <div class="content-top-1">
+                                        <div class="col-md-6 top-content">
+                                            <h5>Negative Reviews</h5>
+                                            <label><?php echo $neg_sent_com ?></label>
+                                        </div>
+                                        <div class="col-md-6 top-content1">	   
+                                            <div id="demo-pie-3" class="pie-title-center" data-percent="<?php echo $neg_percent; ?>"> <span class="pie-value"></span> </div>
+                                        </div>
+                                        <div class="clearfix"> </div>
+                                    </div>
+
                                 </div>
                             </div>
+                            <!--//sreen-gallery-cursual---->
+                        </div>
+                    </div>
+
+                    <div class="charts">		
+                        <div class="mid-content-top charts-grids">
+                            <div class="middle-content">
+                                <h4 class="title">Comment Reviews</h4><hr>
+
+                                <!-- start content_slider -->
+                                <div id="owl-demo" class="owl-carousels text-center">
 
 
-                            <!-- for amcharts js -->
-                            <script src="js/amcharts.js"></script>
-                            <script src="js/serial.js"></script>
-                            <script src="js/export.min.js"></script>
-                            <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
-                            <script src="js/light.js"></script>
-                            <!-- for amcharts js -->
+                                    <div class="direct-chat-msg">
+                                        <?php
+                                        while ($row1 = mysqli_fetch_array($get_comments)) {
+                                            $comments = $row1["comment"];
+                                            $status = $row1["status"];
+                                            $date = date_format(date_create($row1["date"]), "d M Y H:iA");
+                                            $user = $row1["user_id"];
+                                            $user_details = mysqli_query($conn, "select * from user where user_id='$user'");
+                                            $row2 = mysqli_fetch_array($user_details);
+                                            $fullname = $row2["sname"] . " " . $row2["fname"] . " " . $row2["oname"]
+                                            ?>
 
-                            <script  src="js/index1.js"></script>
+                                            <div style="border:1px solid; border-radius:12px; margin-bottom: 10px;" class="activity-desc-sub mycommentsh">
+                                                <div class="activity-row activity-row1">
+                                                    <div class="col-xs-2 activity-img"><img src='images/avatar5.png' width="40" height="40" class="img-responsive" alt=""/>
+                                                        <span style="font:bolder !important;"><b><?php echo $fullname; ?></b></span>
+                                                    </div>
+                                                    <div class="col-xs-12 activity-img1">
+                                                        <div class="activity-desc-sub">
+                                                            <span class="pull-right" style="font-style:bold !important;">Review Sentiment: <b><?php echo $status; ?></b></span>
 
-                        
+                                                            <h6><?php echo $date; ?></h6>
+                                                            <p style="color:black; " ><?php echo $comments ?></p>
 
 
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="clearfix"> </div>
+                                                </div>
+
+                                            </div>
+                                            <div class="clear"></div>
+
+                                            <?php
+                                        }
+                                        ?>
+                                        <div class="box-footer">
+                                            <form action="" method="post">
+                                                <div class="ilnput-group">
+                                                    <textarea  name="message" width="100%" rows="4" placeholder="Type Message ..." class="form-control"> </textarea><br>
+                                                    <span class="input-group-btn">
+                                                        <button  type="submit" height="100%"  name="submit" class="btn btn-warning btn-flat">Add Review</button>
+                                                    </span>
+                                                </div>
+
+                                            </form>
+                                        </div><!-- /.box-footer-->
+                                    </div>
+                                </div>
+                                <!--//sreen-gallery-cursual---->
+                            </div>
+                        </div>
+
+                        <!-- for amcharts js -->
+                        <script src="js/amcharts.js"></script>
+                        <script src="js/serial.js"></script>
+                        <script src="js/export.min.js"></script>
+                        <link rel="stylesheet" href="css/export.css" type="text/css" media="all" />
+                        <script src="js/light.js"></script>
+                        <!-- for amcharts js -->
+
+                        <script  src="js/index1.js"></script>
+
+                    </div>
                 </div>
+                <!--footer-->
+                <?php
+                include 'includes/footer.php';
+                ?>
+                <!--//footer-->
             </div>
-            <!--footer-->
-            <?php
-            include 'includes/footer.php';
-            ?>
-            <!--//footer-->
-        </div>
 
-        <!-- new added graphs chart js-->
+            <!-- new added graphs chart js-->
 
-        <script src="js/Chart.bundle.js"></script>
-        <script src="js/utils.js"></script>
+            <script src="js/Chart.bundle.js"></script>
+            <script src="js/utils.js"></script>
 
-        <script>
+            <script>
             var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             var color = Chart.helpers.color;
             var barChartData = {
@@ -305,12 +544,12 @@ if (!$_SESSION) {
 
                 window.myBar.update();
             });
-        </script>
-        <!-- new added graphs chart js-->
+            </script>
+            <!-- new added graphs chart js-->
 
-        <!-- Classie --><!-- for toggle left push menu script -->
-        <script src="js/classie.js"></script>
-        <script>
+            <!-- Classie --><!-- for toggle left push menu script -->
+            <script src="js/classie.js"></script>
+            <script>
             var menuLeft = document.getElementById('cbp-spmenu-s1'),
                     showLeftPush = document.getElementById('showLeftPush'),
                     body = document.body;
@@ -328,24 +567,24 @@ if (!$_SESSION) {
                     classie.toggle(showLeftPush, 'disabled');
                 }
             }
-        </script>
-        <!-- //Classie --><!-- //for toggle left push menu script -->
+            </script>
+            <!-- //Classie --><!-- //for toggle left push menu script -->
 
-        <!--scrolling js-->
-        <script src="js/jquery.nicescroll.js"></script>
-        <script src="js/scripts.js"></script>
-        <!--//scrolling js-->
+            <!--scrolling js-->
+            <script src="js/jquery.nicescroll.js"></script>
+            <script src="js/scripts.js"></script>
+            <!--//scrolling js-->
 
-        <!-- side nav js -->
-        <script src='js/SidebarNav.min.js' type='text/javascript'></script>
-        <script>
+            <!-- side nav js -->
+            <script src='js/SidebarNav.min.js' type='text/javascript'></script>
+            <script>
             $('.sidebar-menu').SidebarNav()
-        </script>
-        <!-- //side nav js -->
+            </script>
+            <!-- //side nav js -->
 
-        <!-- for index page weekly sales java script -->
-        <script src="js/SimpleChart.js"></script>
-        <script>
+            <!-- for index page weekly sales java script -->
+            <script src="js/SimpleChart.js"></script>
+            <script>
             var graphdata1 = {
                 linecolor: "#CCA300",
                 title: "Monday",
@@ -597,13 +836,13 @@ if (!$_SESSION) {
                 });
             });
 
-        </script>
-        <!-- //for index page weekly sales java script -->
+            </script>
+            <!-- //for index page weekly sales java script -->
 
 
-        <!-- Bootstrap Core JavaScript -->
-        <script src="js/bootstrap.js"></script>
-        <!-- //Bootstrap Core JavaScript -->
+            <!-- Bootstrap Core JavaScript -->
+            <script src="js/bootstrap.js"></script>
+            <!-- //Bootstrap Core JavaScript -->
 
     </body>
 </html>

@@ -73,7 +73,7 @@ function upload_book_image($path, $ext) {
     move_uploaded_file($path, "temp_img/" . $img_url);
 
     $resizeObj = new resize("temp_img/" . $img_url);
-    $resizeObj->resizeImage(463, 700, 'exact');
+    $resizeObj->resizeImage(453, 338, 'exact');
     $resizeObj->saveImage("images/" . $img_url, 100);
     unlink("temp_img/" . $img_url);
     return $img_url;

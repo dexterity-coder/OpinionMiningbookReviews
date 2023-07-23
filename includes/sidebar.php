@@ -9,7 +9,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <h1><a class="navbar-brand" href="#"><span class="fa fa-area-chart"></span> Books<span class="dashboard_text">Reviews Analysis</span></a></h1>
+                <h1><a class="navbar-brand" href="#"><span class="fa fa-car"></span> Cars<span class="dashboard_text">Reviews Analysis</span></a></h1>
             </div>
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="sidebar-menu">
@@ -24,8 +24,8 @@
                             </a>
                         </li>
                         <li class="treeview">
-                            <a href="addbooks">
-                                <i class="fa fa-book"></i> <span> Add | Manage Books</span>
+                            <a href="addcars">
+                                <i class="fa fa-car"></i> <span> Add | Manage Cars</span>
                             </a>
                         </li>
                        
@@ -48,13 +48,18 @@
                             </a>
                         </li>  
                         <li class="treeview">
-                            <a href="books">
-                                <i class="fa  fa-book"></i> <span>Books</span>
+                            <a href="cars">
+                                <i class="fa  fa-book"></i> <span>Cars</span>
                             </a>
                         </li> 
                         <li class="treeview">
                             <a href="profile">
                                 <i class="fa  fa-database"></i> <span>My Profile</span>
+                            </a>
+                        </li>  
+                         <li class="treeview">
+                            <a href="contact">
+                                <i class="fa  fa-database"></i> <span>Send Feedback</span>
                             </a>
                         </li>  
                         <?php

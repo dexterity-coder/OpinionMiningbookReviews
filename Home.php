@@ -131,7 +131,7 @@ if (!$_SESSION) {
                     <div class="charts">		
                         <div class="mid-content-top charts-grids">
                             <div class="middle-content">
-                                <h4 class="title">Trending Books</h4>
+                                <h4 class="title">Trending Cars</h4>
 
                                 <!-- start content_slider -->
                                 <div id="owl-demo" class="owl-carousel text-center">
@@ -145,7 +145,7 @@ if (!$_SESSION) {
                                         $bdesc = $row["bookdesc"];
                                         ?>
                                         <div class="item">
-                                            <a title="Click to view <?php echo $bname; ?> Reviews and Analysis" href="bookanalysis?u=<?php echo base64_encode($bid); ?>">   <img class="lazyOwl img-responsive" data-src="images/<?php echo $bimg; ?>" alt="name"></a>
+                                            <a title="Click to view <?php echo $bname; ?> Reviews and Analysis" href="caranalysis?u=<?php echo base64_encode($bid); ?>">   <img class="lazyOwl img-responsive" data-src="images/<?php echo $bimg; ?>" alt="name"></a>
                                         </div>                                        
                                         <?php
                                     }
